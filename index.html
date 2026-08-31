@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123b66">
+<title>TD Tour Entrant Tracker v1.03</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{font-family:Arial,Helvetica,sans-serif;color:#17212b;background:#f3f6fa}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#f3f6fa}
+header{background:#123b66;color:#fff;padding:15px 16px 13px;position:sticky;top:0;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-size:20px;margin:0}.version{font-size:12px;font-weight:800;opacity:.9}
+main{max-width:660px;margin:0 auto;padding:14px}
+.card{background:#fff;border:1px solid #cbd5df;border-radius:13px;box-shadow:0 3px 14px rgba(0,0,0,.06);margin-bottom:13px;overflow:hidden}
+.card h2{font-size:15px;margin:0;padding:12px 14px;background:#f8fafc;border-bottom:1px solid #d9e1e7}
+.content{padding:14px}
+.identity{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.item{background:#f7f9fb;border:1px solid #d7e0e7;border-radius:9px;padding:9px 10px}
+.item small{display:block;color:#667582;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.item strong{display:block;margin-top:3px;font-size:14px;overflow-wrap:anywhere}
+.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;font-weight:800;color:#52616d}
+input{width:100%;min-height:46px;border:1px solid #9ca3af;border-radius:9px;background:#fff;padding:9px 10px;font:inherit;font-size:17px}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status{border:1px solid #ccd7df;border-radius:10px;padding:11px;background:#fbfcfd;min-height:74px}
+.status small{display:block;color:#5c6c78;font-weight:700;font-size:11px;text-transform:uppercase}
+.status strong{display:block;margin-top:6px;font-size:17px}
+.status span{display:block;margin-top:4px;color:#5d6b77;font-size:12px;line-height:1.35}
+.good{color:#18703d}.warn{color:#b45309}.bad{color:#a11b1b}
+button{width:100%;min-height:54px;border:0;border-radius:11px;font-size:18px;font-weight:800;cursor:pointer}
+.start{background:#178045;color:#fff}.stop{background:#a32a2a;color:#fff}.setup{background:#2563eb;color:#fff}
+button:disabled{opacity:.45;cursor:default}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.run-summary{min-height:54px;border:1px solid #ccd7df;border-radius:11px;background:#f8fafc;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;padding:10px 12px;font-size:18px;font-weight:700;margin-bottom:10px}
+.run-summary .slash,.run-summary .sep{color:#7a8792;font-weight:600}
+.run-summary strong{font-size:20px}
+.note{font-size:13px;line-height:1.45;color:#52616d;margin:10px 0 0}
+.queue{font-size:13px;line-height:1.5}
+.footer{font-size:12px;color:#60707d;text-align:center;padding:4px 8px 18px}
+.install-card{border:1px solid #cbd5df;border-radius:10px;background:#fbfcfd;padding:12px;margin-bottom:12px}
+.install-card strong{display:block;font-size:15px;margin-bottom:5px}
+.install-card p{margin:0 0 10px;font-size:13px;line-height:1.4;color:#52616d}
+.install-btn{background:#2563eb;color:#fff}
+.reset-btn{background:#fff;color:#8b1e1e;border:1px solid #c9a3a3;margin-top:8px;min-height:46px;font-size:15px}
+.installed-note{border:1px solid #b9c8d6;border-radius:10px;background:#f8fafc;padding:12px;font-size:14px;line-height:1.45;color:#334155;margin-bottom:12px}
+.hidden{display:none!important}
+@media(max-width:520px){.identity,.status-grid,.actions{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-row">
+    <h1>TD Tour Entrant Tracker</h1>
+    <span class="version">v1.03</span>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2>Tour</h2>
+    <div class="content identity">
+      <div class="item"><small>Tour</small><strong id="tourTitle">Not configured</strong></div>
+      <div class="item"><small>Tracking</small><strong id="configState">Open Tour link</strong></div>
+    </div>
+  </section>
+
+  <section class="card" id="identityCard">
+    <h2>Entrant</h2>
+    <div class="content">
+      <div class="identity">
+        <div class="field"><label for="tourNoInput">Tour No.</label><input id="tourNoInput" inputmode="numeric" autocomplete="off"></div>
+        <div class="field"><label for="surnameInput">Surname</label><input id="surnameInput" autocomplete="family-name"></div>
+      </div>
+      <button id="confirmBtn" class="setup" style="margin-top:12px">Confirm Entrant</button>
+      <p class="note" id="identityNote">Enter the Tour number and driver surname used for the Tour entry.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Tracking</h2>
+    <div class="content">
+      <button id="startBtn" class="start" disabled>Start Tracking</button>
+      <div id="runSummary" class="run-summary hidden" aria-live="polite">
+        <span>Queue <strong id="queueCount">0</strong></span>
+        <span class="sep">·</span><span>Total <strong id="gpsCount">0</strong></span>
+        <span class="sep">·</span><span>Acc <strong id="accuracyValue">—</strong></span>
+      </div>
+      <button id="stopBtn" class="stop hidden" disabled>Stop Tracking</button>
+      <p class="note">Queue is the number of reports waiting on this phone. It normally returns to 0 after sending; if offline it will accumulate and clear automatically when signal returns.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Latest activity</h2>
+    <div class="content queue" id="activity">Open the Tour tracking link supplied by the organiser.</div>
+  </section>
+  <section class="card" id="installSection">
+    <h2>App</h2>
+    <div class="content">
+      <div id="installCard" class="install-card hidden">
+        <strong>Install TD Tour Entrant Tracker</strong>
+        <p>Install the app on this phone for normal Tour use.</p>
+        <button id="installBtn" class="install-btn">Install App</button>
+      </div>
+      <div id="installedNote" class="installed-note hidden">
+        App installed. Close this browser tab and open <strong>TD Tour Entrant Tracker</strong> from the phone home screen.
+      </div>
+      <button id="resetBtn" class="reset-btn">Reset App</button>
+    </div>
+  </section>
+</main>
+<div class="footer">TD Tour · entrant GPS tracking</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const VERSION='v1.03';
+  const REPORT_INTERVAL_SECONDS=30;
+  const CONFIG_KEY='td-tour-entrant-tracker-config-v100';
+  const IDENTITY_KEY='td-tour-entrant-tracker-identity-v100';
+  const QUEUE_KEY='td-tour-entrant-tracker-queue-v100';
+  const SEQUENCE_KEY='td-tour-entrant-tracker-sequence-v100';
+  const MAX_CONCURRENT_SENDS=5;
+  const QUEUE_RETRY_MS=15000;
+
+  let config=null,eventData=null,entrant=null;
+  let tracking=false,watchId=null,sendTimer=null,wakeLock=null,latestFix=null;
+  let firstRunReportQueued=false;
+  let deferredInstallPrompt=null;
+  let sequence=Number(localStorage.getItem(SEQUENCE_KEY)||0);
+  let sessionGpsCount=0;
+  let sendBusy=false,queueRetryTimer=null;
+
+  const $=id=>document.getElementById(id);
+  const clean=v=>String(v??'').trim();
+  const norm=v=>clean(v).toLowerCase().replace(/\s+/g,' ');
+  const surnameFromName=name=>{
+    const parts=clean(name).split(/\s+/).filter(Boolean);
+    return parts.length?parts[parts.length-1]:'';
+  };
+
+  function setActivity(text){$('activity').textContent=`${new Date().toLocaleTimeString()} — ${text}`;}
+  function setClass(el,cls){el.classList.remove('good','warn','bad');if(cls)el.classList.add(cls);}
+  function loadQueue(){try{const v=JSON.parse(localStorage.getItem(QUEUE_KEY)||'[]');return Array.isArray(v)?v:[];}catch(_){return[];}}
+  function saveQueue(queue){queue.sort((a,b)=>Number(a.sequence||0)-Number(b.sequence||0));localStorage.setItem(QUEUE_KEY,JSON.stringify(queue));$('queueCount').textContent=String(queue.length);}
+  function updateQueueCount(){$('queueCount').textContent=String(loadQueue().length);}
+  function updateRunSummary(){
+    $('gpsCount').textContent=String(sessionGpsCount);
+    updateQueueCount();
+    const acc=latestFix && Number.isFinite(Number(latestFix.accuracy)) ? Number(latestFix.accuracy).toFixed(1)+' m' : '—';
+    $('accuracyValue').textContent=acc;
+  }
+
+  function parseConfigFromUrl(){
+    const raw=new URL(location.href).searchParams.get('config');
+    if(!raw)return null;
+    let cfg;try{cfg=JSON.parse(raw);}catch(_){throw new Error('The Tour tracking configuration link is invalid.');}
+    const out={
+      configVersion:Number(cfg.configVersion||1),
+      eventId:clean(cfg.eventId),
+      webAppUrl:clean(cfg.webAppUrl||cfg.endpoint),
+      key:clean(cfg.key)
+    };
+    if(!out.eventId||!out.webAppUrl||!out.key)throw new Error('The Tour tracking configuration is incomplete.');
+    return out;
+  }
+
+  function saveConfig(cfg){localStorage.setItem(CONFIG_KEY,JSON.stringify(cfg));}
+  function loadSavedConfig(){try{return JSON.parse(localStorage.getItem(CONFIG_KEY)||'null');}catch(_){return null;}}
+  function loadSavedIdentity(){try{return JSON.parse(localStorage.getItem(IDENTITY_KEY)||'null');}catch(_){return null;}}
+  function saveIdentity(value){localStorage.setItem(IDENTITY_KEY,JSON.stringify(value));}
+
+  async function request(mode,extra={}){
+    const url=new URL(config.webAppUrl);
+    url.searchParams.set('mode',mode);url.searchParams.set('key',config.key);
+    Object.entries(extra).forEach(([k,v])=>url.searchParams.set(k,String(v)));
+    const response=await fetch(url.toString(),{cache:'no-store'});
+    const data=await response.json();
+    if(!data.ok)throw new Error(data.error||`${mode} failed`);
+    return data;
+  }
+
+  async function loadEvent(){
+    const data=await request('trackingEventRead',{eventId:config.eventId});
+    eventData=data.event||null;
+    if(!eventData)throw new Error('Tour tracking event was not found.');
+    $('tourTitle').textContent=clean(eventData.rallyTitle||eventData.tourTitle||eventData.pageHeader)||'Tour';
+    $('configState').textContent='Configured';
+    setClass($('configState'),'good');
+  }
+
+  function eventEntrants(){return Array.isArray(eventData?.entrants)?eventData.entrants:[];}
+  function entrantNumber(e){return clean(e?.tourNo??e?.rallyNo??e?.number??e?.no??e?.id);}
+  function entrantName(e){return clean(e?.driverName||e?.name||[e?.driverFirst,e?.driverSurname].filter(Boolean).join(' '));}
+  function entrantSurname(e){return clean(e?.driverSurname||e?.surname||surnameFromName(entrantName(e)));}
+
+  function findEntrant(tourNo,surname){
+    const no=norm(tourNo),sn=norm(surname);
+    if(!no||!sn)return null;
+    return eventEntrants().find(e=>norm(entrantNumber(e))===no && norm(entrantSurname(e))===sn)||null;
+  }
+
+  function applyEntrant(e){
+    entrant=e;
+    const no=entrantNumber(e),name=entrantName(e);
+    saveIdentity({eventId:config.eventId,tourNo:no,surname:entrantSurname(e)});
+    $('tourNoInput').value=no;
+    $('surnameInput').value=entrantSurname(e);
+    $('tourNoInput').disabled=true;$('surnameInput').disabled=true;$('confirmBtn').disabled=true;
+    $('identityNote').textContent=`Confirmed: Tour ${no} · ${name}`;
+    $('startBtn').disabled=false;
+    setActivity(`Entrant confirmed: Tour ${no} · ${name}.`);
+  }
+
+  function confirmEntrant(){
+    if(!eventData){setActivity('Tour configuration has not loaded.');return;}
+    const e=findEntrant($('tourNoInput').value,$('surnameInput').value);
+    if(!e){
+      $('identityNote').textContent='Tour No. and surname do not match the uploaded Tour entries.';
+      setActivity('Entrant details not recognised.');
+      return;
+    }
+    applyEntrant(e);
+  }
+
+  async function requestWakeLock(){try{if('wakeLock'in navigator&&document.visibilityState==='visible'){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}}catch(_){}}
+  async function releaseWakeLock(){try{if(wakeLock)await wakeLock.release();}catch(_){}wakeLock=null;}
+
+  function onPosition(position){
+    latestFix={
+      latitude:position.coords.latitude,
+      longitude:position.coords.longitude,
+      accuracy:position.coords.accuracy,
+      speedKph:Number.isFinite(position.coords.speed)?Math.max(0,position.coords.speed*3.6):'',
+      gpsTime:new Date(position.timestamp||Date.now()).toISOString()
+    };
+    updateRunSummary();
+    if(tracking && !firstRunReportQueued){
+      firstRunReportQueued=true;
+      queueLatestFix();
+    }
+  }
+
+  function onPositionError(error){$('accuracyValue').textContent='GPS';setActivity(`GPS error: ${error.message||error.code}`);}
+  function startGps(){if(!navigator.geolocation)throw new Error('This browser does not support GPS.');if(watchId!==null)return;watchId=navigator.geolocation.watchPosition(onPosition,onPositionError,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});}
+  function stopGps(){if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=null;}
+
+  function makeReport(){
+    if(!latestFix||!entrant)return null;
+    sequence+=1;localStorage.setItem(SEQUENCE_KEY,String(sequence));
+    return {
+      eventId:config.eventId,
+      rallyTitle:clean(eventData?.rallyTitle||eventData?.tourTitle||eventData?.pageHeader),
+      day:'',
+      route:'',
+      rallyNo:entrantNumber(entrant),
+      tourNo:entrantNumber(entrant),
+      driverName:entrantName(entrant),
+      latitude:latestFix.latitude,
+      longitude:latestFix.longitude,
+      accuracy:latestFix.accuracy,
+      speedKph:latestFix.speedKph,
+      senderId:`TD-TOUR-PHONE-${entrantNumber(entrant)}`,
+      sequence,
+      gpsTime:latestFix.gpsTime,
+      eventType:'POSITION'
+    };
+  }
+
+  function queueLatestFix(){
+    const report=makeReport();
+    if(!report){setActivity('Waiting for the first GPS position.');return;}
+    sessionGpsCount+=1;
+    const queue=loadQueue();queue.push(report);saveQueue(queue);
+    updateRunSummary();
+    setActivity(`Position stored · sequence ${report.sequence}`);flushQueue();
+  }
+
+  async function submitReport(report){
+    const params=new URLSearchParams({mode:'trackingSubmit',key:config.key,data:JSON.stringify(report),_:String(Date.now())});
+    const response=await fetch(`${config.webAppUrl}?${params.toString()}`,{method:'GET',cache:'no-store'});
+    if(!response.ok)throw new Error(`Google HTTP ${response.status}`);
+    const data=await response.json();
+    if(!data.ok)throw new Error(data.error||'Submission rejected');
+    return data;
+  }
+
+  async function flushQueue(){
+    if(sendBusy||!navigator.onLine){if(!navigator.onLine){updateRunSummary();setActivity('Offline — reports retained on phone.');}return;}
+    sendBusy=true;
+    try{
+      while(navigator.onLine){
+        const queue=loadQueue().sort((a,b)=>Number(a.sequence||0)-Number(b.sequence||0));
+        if(!queue.length)break;
+        const group=queue.slice(0,MAX_CONCURRENT_SENDS);
+        updateRunSummary();
+        const results=await Promise.allSettled(group.map(report=>submitReport(report)));
+        const accepted=new Set();let firstError=null;
+        results.forEach((result,index)=>{if(result.status==='fulfilled'){const r=group[index];accepted.add(`${r.senderId}|${r.sequence}`);}else if(!firstError)firstError=result.reason;});
+        if(accepted.size){
+          const remaining=loadQueue().filter(r=>!accepted.has(`${r.senderId}|${r.sequence}`));saveQueue(remaining);
+          const lastAccepted=[...group].reverse().find(r=>accepted.has(`${r.senderId}|${r.sequence}`));
+          updateRunSummary();
+          setActivity(`Google accepted through sequence ${lastAccepted.sequence}.`);
+        }
+        if(firstError){updateRunSummary();setActivity(`Waiting to retry: ${firstError.message}`);break;}
+      }
+    }finally{sendBusy=false;}
+  }
+
+  async function startTracking(){
+    if(tracking||!entrant)return;
+    tracking=true;
+    sessionGpsCount=0;
+    latestFix=null;
+    firstRunReportQueued=false;
+    $('startBtn').classList.add('hidden');$('startBtn').disabled=true;
+    $('runSummary').classList.remove('hidden');
+    $('stopBtn').classList.remove('hidden');$('stopBtn').disabled=false;
+    updateRunSummary();
+    try{
+      startGps();await requestWakeLock();
+      sendTimer=setInterval(queueLatestFix,REPORT_INTERVAL_SECONDS*1000);
+      setActivity('Tracking started. Waiting for GPS and first report.');flushQueue();
+    }catch(error){setActivity(error.message);stopTracking();}
+  }
+
+  async function stopTracking(){
+    tracking=false;
+    firstRunReportQueued=false;
+    $('runSummary').classList.add('hidden');
+    $('stopBtn').classList.add('hidden');$('stopBtn').disabled=true;
+    $('startBtn').classList.remove('hidden');$('startBtn').disabled=!entrant;
+    if(sendTimer)clearInterval(sendTimer);sendTimer=null;stopGps();await releaseWakeLock();
+    setActivity('Tracking stopped. Stored reports remain available for retry.');flushQueue();
+  }
+
+  function startQueueRetryTimer(){if(queueRetryTimer)return;queueRetryTimer=setInterval(()=>{if(loadQueue().length)flushQueue();},QUEUE_RETRY_MS);}
+
+  function isStandalone_(){
+    return !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+  }
+
+  function refreshInstallUi_(){
+    const card=$('installCard'), note=$('installedNote');
+    if(isStandalone_()){
+      if(card)card.classList.add('hidden');
+      if(note)note.classList.add('hidden');
+      return;
+    }
+    if(card)card.classList.toggle('hidden', !deferredInstallPrompt);
+  }
+
+  async function installApp_(){
+    if(!deferredInstallPrompt)return;
+    const promptEvent=deferredInstallPrompt;
+    deferredInstallPrompt=null;
+    try{
+      await promptEvent.prompt();
+      await promptEvent.userChoice;
+    }catch(_){}
+    refreshInstallUi_();
+  }
+
+  async function resetApp_(){
+    const ok=window.confirm('Reset this tracker on this phone?\n\nThis clears saved Tour setup, entrant identity and queued tracking reports.');
+    if(!ok)return;
+    try{ await stopTracking(); }catch(_){}
+    try{
+      [CONFIG_KEY,IDENTITY_KEY,QUEUE_KEY,SEQUENCE_KEY].forEach(k=>localStorage.removeItem(k));
+    }catch(_){}
+    try{
+      if('caches' in window){
+        const names=await caches.keys();
+        await Promise.all(names.filter(n=>String(n).startsWith('td-tour-entrant-tracker-')).map(n=>caches.delete(n)));
+      }
+    }catch(_){}
+    try{
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+    }catch(_){}
+    location.reload();
+  }
+
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();
+    deferredInstallPrompt=e;
+    refreshInstallUi_();
+  });
+
+  window.addEventListener('appinstalled',()=>{
+    deferredInstallPrompt=null;
+    if($('installCard'))$('installCard').classList.add('hidden');
+    if($('installedNote'))$('installedNote').classList.remove('hidden');
+  });
+
+  $('confirmBtn').addEventListener('click',confirmEntrant);
+  $('startBtn').addEventListener('click',startTracking);
+  $('stopBtn').addEventListener('click',stopTracking);
+  $('installBtn').addEventListener('click',installApp_);
+  $('resetBtn').addEventListener('click',resetApp_);
+  window.addEventListener('online',()=>{setActivity('Internet connection restored. Sending queued reports.');flushQueue();});
+  window.addEventListener('offline',()=>setActivity('Internet connection lost. Reports will remain stored on this phone.'));
+  document.addEventListener('visibilitychange',()=>{if(tracking&&document.visibilityState==='visible')requestWakeLock();});
+  window.addEventListener('beforeunload',()=>{if(sendTimer)clearInterval(sendTimer);if(queueRetryTimer)clearInterval(queueRetryTimer);});
+
+  async function init(){
+    try{
+      const fromUrl=parseConfigFromUrl();
+      if(fromUrl){config=fromUrl;saveConfig(config);}
+      else config=loadSavedConfig();
+
+      updateRunSummary();startQueueRetryTimer();refreshInstallUi_();
+      if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+
+      if(!config){
+        setActivity('Open the Tour tracking link supplied by the organiser.');
+        return;
+      }
+
+      await loadEvent();
+      const saved=loadSavedIdentity();
+      if(saved&&saved.eventId===config.eventId){
+        $('tourNoInput').value=saved.tourNo||'';
+        $('surnameInput').value=saved.surname||'';
+        const e=findEntrant(saved.tourNo,saved.surname);
+        if(e)applyEntrant(e);
+      }
+      if(loadQueue().length)flushQueue();
+      if(!entrant){setActivity('Tour loaded. Enter Tour No. and surname.');}
+    }catch(error){
+      $('configState').textContent='Error';setClass($('configState'),'bad');
+      setActivity(`Could not load Tour tracking setup: ${error.message}`);
+      $('startBtn').disabled=true;
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
